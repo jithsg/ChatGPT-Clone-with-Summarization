@@ -18,23 +18,30 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 openai.api_key = openai_api_key
 
 
-def getresponse(userInput):
-    llm = OpenAI(
-        temperature=0,
-        model_name='text-davinci-003'  #we can also use 'gpt-3.5-turbo'
-    )
-    conversation = ConversationChain(
-        llm=llm,
-        verbose=True,
-        memory=ConversationBufferMemory()
-    )
+if 'conversation' not in st.session_state:
+    st.session_state['conversation'] = None
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = []
+    
+    
 
-    conversation("Good morning AI!")
-    conversation("My name is sharath!")
-    conversation("I am a software engineer!")
-    print(conversation.memory.buffer)
-    response = conversation.predict(input="What is my name")
+def getresponse(userInput):
+    
+    if st.session_state['conversation'] is None:
+   
+        llm = OpenAI(
+            temperature=0,
+            model_name='text-davinci-003'  #we can also use 'gpt-3.5-turbo'
+        )
+        st.session_state['conversation']  = ConversationChain(
+            llm=llm, 
+            verbose=True,
+            memory=ConversationBufferMemory()
+        )
+        
+    response = st.session_state['conversation'].predict(input=userInput)
     return response
+        
 
 st.set_page_config(page_title="Chat GPT Clone", page_icon=":robot_face:")
 st.markdown("<h1 style='text-align: center;'>How can I assist you? </h1>", unsafe_allow_html=True)
@@ -55,6 +62,14 @@ with container:
         user_input = st.text_area("Your question goes here:", key='input', height=100)
         submit_button = st.form_submit_button(label='Send')
         if submit_button:
-            answer = getresponse(user_input)
+            st.session_state['messages'].append(user_input)
+            model_response = getresponse(user_input)
+            st.session_state['messages'].append(model_response)
+
             with response_container:
-                st.write(answer)
+                 for i in range(len(st.session_state['messages'])):
+                        if (i % 2) == 0:
+                            message(st.session_state['messages'][i], is_user=True, key=str(i) + '_user')
+                        else:
+                            message(st.session_state['messages'][i], key=str(i) + '_AI')
+                            
