@@ -13,45 +13,50 @@ from langchain.chains.conversation.memory import (ConversationBufferMemory,
 
 from langchain.memory import ConversationTokenBufferMemory
 
-load_dotenv()
-openai_api_key = os.getenv('OPENAI_API_KEY')
-openai.api_key = openai_api_key
+# load_dotenv()
+# openai_api_key = os.getenv('OPENAI_API_KEY')
+# openai.api_key = openai_api_key
 
 
 if 'conversation' not in st.session_state:
     st.session_state['conversation'] = None
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
+if 'API_KEY' not in st.session_state:
+    st.session_state['API_KEY'] = ''
     
-    
+st.set_page_config(page_title="Chat GPT Clone", page_icon=":robot_face:")
+st.markdown("<h1 style='text-align: center;'>How can I assist you? </h1>", unsafe_allow_html=True)
+st.sidebar.title("😎")
 
-def getresponse(userInput):
+
+st.session_state['API_KEY'] = st.sidebar.text_input("What's your API key?",type="password")
+summarise_button = st.sidebar.button("Summarise the conversation", key="summarise")
+
+if summarise_button:
+    summarise_placeholder= st.sidebar.write("Nice chatting with you my friend ❤️:\n\n"+st.session_state['conversation'].memory.buffer)
+    
+    
+def getresponse(userInput, api_key):
     
     if st.session_state['conversation'] is None:
    
         llm = OpenAI(
             temperature=0,
+            openai_api_key=api_key,
             model_name='text-davinci-003'  #we can also use 'gpt-3.5-turbo'
         )
         st.session_state['conversation']  = ConversationChain(
             llm=llm, 
             verbose=True,
-            memory=ConversationBufferMemory()
+            memory=ConversationSummaryMemory(llm=llm)
         )
         
     response = st.session_state['conversation'].predict(input=userInput)
+    print(st.session_state['conversation'].memory.buffer)
     return response
         
 
-st.set_page_config(page_title="Chat GPT Clone", page_icon=":robot_face:")
-st.markdown("<h1 style='text-align: center;'>How can I assist you? </h1>", unsafe_allow_html=True)
-
-st.sidebar.title("😎")
-api_key = st.sidebar.text_input("What's your API key?",type="password")
-summarise_button = st.sidebar.button("Summarise the conversation", key="summarise")
-if summarise_button:
-    summarise_placeholder = st.sidebar.write("Nice chatting with you my friend ❤️:\n\n + 'Hello Friend'")
-    #summarise_placeholder.write("Nice chatting with you my friend ❤️:\n\n"+st.session_state['conversation'].memory.buffer)
 
 response_container = st.container()
 # Here we will have a container for user input text box
@@ -63,7 +68,7 @@ with container:
         submit_button = st.form_submit_button(label='Send')
         if submit_button:
             st.session_state['messages'].append(user_input)
-            model_response = getresponse(user_input)
+            model_response = getresponse(user_input, st.session_state['API_KEY'])
             st.session_state['messages'].append(model_response)
 
             with response_container:
