@@ -7,3 +7,5 @@ faiss-cpu
 python-dotenv
 ipython
 streamlit_chat
+sentence-transformers
+chromadb
